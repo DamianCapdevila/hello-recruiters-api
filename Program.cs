@@ -24,14 +24,12 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-if(app.Environment.IsDevelopment())
-{
     app.UseSwagger();
     app.UseSwaggerUI(swaggerUI =>
     {
         swaggerUI.SwaggerEndpoint("/swagger/v1/swagger.json", "Hello Recruiter API V1");
     });
-}
+
 
 app.MapGet("/", () => "Hello Recruiters!!")
     .WithDescription("Gets a welcome message for all recruiters")

@@ -1,0 +1,5 @@
+{
+    "appService.preDeployTask": "publish-release",
+    "appService.deploySubpath": "bin\\Release\\net8.0\\publish",
+    "appService.defaultWebAppToDeploy": "/subscriptions/69de55b0-8238-4b07-bbfb-754d0b2217b5/resourceGroups/showcases/providers/Microsoft.Web/sites/hello-recruiter-api"
+}
