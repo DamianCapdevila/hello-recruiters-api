@@ -8,6 +8,7 @@ Explore the API endpoints and test them using the Swagger documentation availabl
 ## Overview
 
 The Hello Recruiter API is a minimal API built with .NET and hosted on Azure Static Web Apps. It provides endpoints for basic CRUD operations on recruiter data, along with JWT authentication and user authorization.
+
 Explanation on testing this API using Microsoft.AspNetCore.Mvc.Testing can be found in this readme in the TESTING section.
 
 ## Authentication
