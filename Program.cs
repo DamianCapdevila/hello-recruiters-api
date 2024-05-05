@@ -194,3 +194,4 @@ IResult Login(UserLogin user, IUserService service)
 }
 
 app.Run();
+public partial class Program { }

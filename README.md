@@ -9,6 +9,8 @@ Explore the API endpoints and test them using the Swagger documentation availabl
 
 The Hello Recruiter API is a minimal API built with .NET and hosted on Azure Static Web Apps. It provides endpoints for basic CRUD operations on recruiter data, along with JWT authentication and user authorization.
 
+Explanation on testing this API using Microsoft.AspNetCore.Mvc.Testing can be found in this readme in the TESTING section.
+
 ## Authentication
 
 The API utilizes JWT (JSON Web Token) authentication. To authenticate, use the following credentials:
@@ -49,6 +51,60 @@ The API uses dependency injection for the authorization service and the methods 
 
 - **DELETE /delete**  
   Deletes a recruiter by its ID. (Authorization required)
+
+
+## Testing
+
+To ensure the functionality of the Hello Recruiter API, the API is testeable. Below, an example test class built using the Microsoft.AspNetCore.Mvc.Testing and FluentAssertions packages.
+
+### Example Test Class
+
+The test class `HelloRecruitersApiTests` contains a test method `HelloRecruiterApiRootEndpointShouldReturnGreetingMessage` which verifies that the root endpoint of the API returns the expected greeting message.
+
+```csharp
+using FluentAssertions;
+using HelloRecruiter.Models;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.VisualStudio.TestPlatform.TestHost;
+
+namespace HelloRecruitersApi.Tests
+{
+    public class HelloRecruitersApiTests
+    {
+        public class Tests
+        {
+            [SetUp]
+            public void Setup()
+            {
+            }
+
+            [Test]
+            public async Task HelloRecruiterApiRootEndpointShouldReturnGreetingMessage()
+            {
+                //Arrange
+                var webApplicationfactory = new WebApplicationFactory<Program>().WithWebHostBuilder(webHostBuilder => { });
+                var client = webApplicationfactory.CreateClient();
+                var expectedResponse = "Hello Recruiters!!";
+
+                //Act
+                var response = await client.GetAsync("/").Result.Content.ReadAsStringAsync();
+
+                //Assert
+                response.Should().Be(expectedResponse);
+            }
+        }
+    }
+}
+```
+
+### Test Dependencies
+
+The testing project relies on the following dependencies:
+
+- `xUnit`: A unit testing framework.
+- `FluentAssertions`: A fluent assertion library for .NET.
+- `Microsoft.AspNetCore.Mvc.Testing`: Provides infrastructure for launching the ASP.NET Core app and making HTTP requests in tests.
+
 
 ## Author
 
