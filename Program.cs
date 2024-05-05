@@ -1,9 +1,21 @@
+using HelloRecruiter.Models;
+using HelloRecruiter.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using RecruiterStore.DB;
+using System.Data;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSingleton<IRecruiterService, RecruiterService>();
+builder.Services.AddSingleton<IUserService, UserService>();
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo 
@@ -19,42 +31,166 @@ builder.Services.AddSwaggerGen(options =>
         }
         });
     options.EnableAnnotations();
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Description = "Bearer Authentication with JWT Token",
+        Type = SecuritySchemeType.Http
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Id = "Bearer",
+                    Type = ReferenceType.SecurityScheme
+                }
+            },
+            new List<string>()
+        }
+    });
 });
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer( options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters()
+    {
+        ValidateActor = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+		ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+	};
+
+});
+
+builder.Services.AddAuthorization();
 
 
 var app = builder.Build();
 
-if(app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(swaggerUI =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(swaggerUI =>
-    {
-        swaggerUI.SwaggerEndpoint("/swagger/v1/swagger.json", "Hello Recruiter API V1");
-    });
-}
+    swaggerUI.SwaggerEndpoint("/swagger/v1/swagger.json", "Hello Recruiter API V1");
+});
+
+app.UseAuthorization();
+app.UseAuthentication();
+
 
 app.MapGet("/", () => "Hello Recruiters!!")
     .WithDescription("Gets a welcome message for all recruiters")
     .WithOpenApi();
 
-app.MapGet("/recruiters/{id}", (int id) => RecruiterDB.GetRecruiter(id))
-    .WithDescription("Gets a recruiter by its id")
+app.MapPost("/login",
+    (UserLogin user, IUserService service) => Login(user, service))
+    .WithDescription("Provides a login mechanism")
+	.WithOpenApi();
+
+app.MapGet("/list", (IRecruiterService service) => List(service))
+    .WithDescription("Gets all recruiters")
     .WithOpenApi();
 
-app.MapGet("/recruiters", () => RecruiterDB.GetRecruiters())
-    .WithDescription("Gets all recruiters")
+app.MapGet("/get", 
+	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Standard,Administrator")]
+    (int id, IRecruiterService service) => Get(id, service))
+	.WithDescription("Gets a recruiter by its id")
     .WithOpenApi();;
 
-app.MapPost("/recruiters", (Recruiter recruiter) => RecruiterDB.CreateRecruiter(recruiter))
+app.MapPost("/create",
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
+    (Recruiter recruiter, IRecruiterService service) => Create(recruiter, service))
     .WithDescription("Creates a new recruiter")
     .WithOpenApi();;
 
-app.MapPut("/recruiters", (Recruiter recruiter) => RecruiterDB.UpdateRecruiter(recruiter))
+app.MapPut("/update",
+	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
+    (Recruiter newRecruiter, IRecruiterService service) => Update(newRecruiter, service))
     .WithDescription("Updates a recruiter")
     .WithOpenApi();
 
-app.MapDelete("/recruiters/{id}", (int id) => RecruiterDB.RemoveRecruiter(id))
-    .WithDescription("Deletes a recruiter")
+app.MapDelete("/delete",
+	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
+    (int id, IRecruiterService service) => Delete(id, service))
+    .WithDescription("Deletes a recruiter by its id")
     .WithOpenApi();
+
+
+IResult Create(Recruiter recruiter, IRecruiterService service)
+{
+    var result = service.Create(recruiter);
+    return Results.Ok(result);
+}
+
+IResult Get(int id, IRecruiterService service)
+{
+	var recruiter = service.Get(id);
+    if (recruiter == null) return Results.NotFound("Recruiter not found.");
+	return Results.Ok(recruiter);
+}
+
+IResult List(IRecruiterService service)
+{
+    var recruiter = service.List();
+    return Results.Ok(recruiter);
+}
+
+IResult Update(Recruiter recruiter, IRecruiterService service)
+{
+    var updatedRecruiter = service.Update(recruiter);
+    if (updatedRecruiter == null) return Results.NotFound("Recruiter not found.");
+    return Results.Ok(updatedRecruiter);
+}
+
+IResult Delete(int id, IRecruiterService service)
+{
+    var result = service.Delete(id);
+    if (!result) return Results.BadRequest("Something went wrong.");
+    return Results.Ok(result);
+}
+
+IResult Login(UserLogin user, IUserService service)
+{
+    if(!string.IsNullOrEmpty(user.Username)&&!string.IsNullOrEmpty(user.Password))
+    {
+        var loggedInUser = service.Get(user);
+        if (loggedInUser == null) return Results.NotFound($"User {user.Username} not found.");
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, loggedInUser.Username),
+            new Claim(ClaimTypes.Email, loggedInUser.EmailAddress),
+            new Claim(ClaimTypes.GivenName, loggedInUser.GivenName),
+            new Claim(ClaimTypes.Surname, loggedInUser.Surname),
+            new Claim(ClaimTypes.Role, loggedInUser.Role)
+        };
+
+        var token = new JwtSecurityToken
+        (
+            issuer: builder.Configuration["Jwt:Issuer"],
+            audience: builder.Configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(1),
+            notBefore: DateTime.UtcNow,
+            signingCredentials: new SigningCredentials(
+				new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])), SecurityAlgorithms.HmacSha256)
+        );
+
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token); 
+        
+        return Results.Ok(tokenString);
+    }
+
+    return Results.BadRequest("User or Password is null.");
+}
 
 app.Run();
