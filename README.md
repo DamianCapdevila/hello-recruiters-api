@@ -2,7 +2,8 @@
 # Hello Recruiter API
 
 Welcome to the Hello Recruiter API! This API aims to greet recruiters from all over the world and provide essential functionalities for managing recruiter data.
-Explore the API endpoints and test them using the Swagger documentation available [here](https://hello-recruiter-api.azurewebsites.net/swagger/index.html)
+
+Explore the API endpoints and test them using the Swagger documentation available [here](https://hello-recruiter-api.azurewebsites.net/swagger/index.html) !
 
 ## Overview
 
