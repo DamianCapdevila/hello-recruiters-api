@@ -22,14 +22,14 @@ public class RecruiterService : IRecruiterService
 		return _dbContext.Recruiters.FirstOrDefault(recruiter => recruiter.Id == id);
 	}
 
-	public async Task<Recruiter> Create(Recruiter recruiter)
+	public async Task<Recruiter> CreateAsync(Recruiter recruiter)
 	{
 		_dbContext.Recruiters.Add(recruiter);
 		await _dbContext.SaveChangesAsync();
 		return recruiter;
 	}
 
-	public async Task<Recruiter> Update(Recruiter newRecruiter)
+	public async Task<Recruiter> UpdateAsync(Recruiter newRecruiter)
 	{
 		var oldRecruiter = _dbContext.Recruiters.FirstOrDefault(recruiter => recruiter.Id == newRecruiter.Id);
 		if (oldRecruiter != null)
@@ -40,7 +40,7 @@ public class RecruiterService : IRecruiterService
 		return newRecruiter;
 	}
 
-	public async Task<bool> Delete(int id)
+	public async Task<bool> DeleteAsync(int id)
 	{
 		var recruiter = _dbContext.Recruiters.FirstOrDefault(recruiter => recruiter.Id == id);
 		if (recruiter != null)

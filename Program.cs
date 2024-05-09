@@ -134,7 +134,7 @@ app.MapDelete("/delete",
 
 async Task<IResult> CreateAsync(Recruiter recruiter, IRecruiterService service)
 {
-    var result = await service.Create(recruiter);
+    var result = await service.CreateAsync(recruiter);
     return Results.Ok(result);
 }
 
@@ -153,14 +153,14 @@ IResult List(IRecruiterService service)
 
 async Task<IResult> UpdateAsync(Recruiter recruiter, IRecruiterService service)
 {
-    var updatedRecruiter = await service.Update(recruiter);
+    var updatedRecruiter = await service.UpdateAsync(recruiter);
     if (updatedRecruiter == null) return Results.NotFound("Recruiter not found.");
     return Results.Ok(updatedRecruiter);
 }
 
 async Task<IResult> DeleteAsync(int id, IRecruiterService service)
 {
-    var result = await service.Delete(id);
+    var result = await service.DeleteAsync(id);
     if (!result) return Results.BadRequest("Something went wrong.");
     return Results.Ok(result);
 }

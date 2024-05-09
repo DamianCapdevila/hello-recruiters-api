@@ -6,8 +6,8 @@ namespace HelloRecruiter.Services
 	{
 		public List<Recruiter> List();
 		public Recruiter Get(int id);
-		public Task<Recruiter> Create(Recruiter recruiter);
-		public Task<Recruiter> Update(Recruiter recruiter);
-		public Task<bool> Delete(int id);
+		public Task<Recruiter> CreateAsync(Recruiter recruiter);
+		public Task<Recruiter> UpdateAsync(Recruiter recruiter);
+		public Task<bool> DeleteAsync(int id);
 	}
 }
