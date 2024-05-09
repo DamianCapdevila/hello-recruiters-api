@@ -1,3 +1,4 @@
+using HelloRecruiter.Data;
 using HelloRecruiter.Models;
 using HelloRecruiter.Repositories;
 
@@ -5,45 +6,49 @@ namespace HelloRecruiter.Services;
 
 public class RecruiterService : IRecruiterService
 {
+	private readonly RecruitersDb _dbContext;
 
-	public List<Recruiter> List()
+    public RecruiterService(RecruitersDb dbContext)
+    {
+        _dbContext = dbContext;
+    }
+    public List<Recruiter> List()
 	{
-		return RecruiterRepository.Recruiters;
+		return _dbContext.Recruiters.ToList();
 	}
 
 	public Recruiter Get(int id)
 	{
-		var recruiter = RecruiterRepository.Recruiters.SingleOrDefault(recruiter => recruiter.Id == id);
-		if (recruiter == null) return null;
+		return _dbContext.Recruiters.FirstOrDefault(recruiter => recruiter.Id == id);
+	}
+
+	public async Task<Recruiter> Create(Recruiter recruiter)
+	{
+		_dbContext.Recruiters.Add(recruiter);
+		await _dbContext.SaveChangesAsync();
 		return recruiter;
 	}
 
-	public Recruiter Create(Recruiter recruiter)
+	public async Task<Recruiter> Update(Recruiter newRecruiter)
 	{
-		recruiter.Id = RecruiterRepository.Recruiters.Count + 1;
-		RecruiterRepository.Recruiters.Add(recruiter);
-		return recruiter;
-	}
-
-	public Recruiter Update(Recruiter newRecruiter)
-	{
-		var oldRecruiter = RecruiterRepository.Recruiters.FirstOrDefault(recruiter => recruiter.Id == newRecruiter.Id);
-		if (oldRecruiter == null) return null;
-		
-		oldRecruiter.Id = newRecruiter.Id;
-		oldRecruiter.Name = newRecruiter.Name;
-		oldRecruiter.Email = newRecruiter.Email;
-		oldRecruiter.Company = newRecruiter.Company;
-		
+		var oldRecruiter = _dbContext.Recruiters.FirstOrDefault(recruiter => recruiter.Id == newRecruiter.Id);
+		if (oldRecruiter != null)
+		{
+			_dbContext.Entry(oldRecruiter).CurrentValues.SetValues(newRecruiter);
+			await _dbContext.SaveChangesAsync();
+		}
 		return newRecruiter;
 	}
 
-	public bool Delete(int id)
+	public async Task<bool> Delete(int id)
 	{
-		var oldRecruiter = RecruiterRepository.Recruiters.FirstOrDefault(recruiter => recruiter.Id == id);
-		if (oldRecruiter == null) return false;
-		
-		RecruiterRepository.Recruiters.Remove(oldRecruiter);
-		return true;
+		var recruiter = _dbContext.Recruiters.FirstOrDefault(recruiter => recruiter.Id == id);
+		if (recruiter != null)
+		{
+			_dbContext.Recruiters.Remove(recruiter);
+			await _dbContext.SaveChangesAsync();	
+			return true;
+		}
+		return false;
 	}
 }

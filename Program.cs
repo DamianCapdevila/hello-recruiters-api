@@ -1,7 +1,9 @@
+using HelloRecruiter.Data;
 using HelloRecruiter.Models;
 using HelloRecruiter.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Data;
@@ -13,8 +15,11 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddSingleton<IRecruiterService, RecruiterService>();
-builder.Services.AddSingleton<IUserService, UserService>();
+var connectionString = builder.Configuration.GetConnectionString("PostgreSQLConnection");
+builder.Services.AddDbContext<RecruitersDb>(options => options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped<IRecruiterService, RecruiterService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -75,6 +80,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddAuthorization();
 
 
+
+
 var app = builder.Build();
 
 app.UseSwagger();
@@ -108,26 +115,26 @@ app.MapGet("/get",
 
 app.MapPost("/create",
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
-    (Recruiter recruiter, IRecruiterService service) => Create(recruiter, service))
+    (Recruiter recruiter, IRecruiterService service) => CreateAsync(recruiter, service))
     .WithDescription("Creates a new recruiter")
     .WithOpenApi();;
 
 app.MapPut("/update",
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
-    (Recruiter newRecruiter, IRecruiterService service) => Update(newRecruiter, service))
+    (Recruiter newRecruiter, IRecruiterService service) => UpdateAsync(newRecruiter, service))
     .WithDescription("Updates a recruiter")
     .WithOpenApi();
 
 app.MapDelete("/delete",
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
-    (int id, IRecruiterService service) => Delete(id, service))
+    (int id, IRecruiterService service) => DeleteAsync(id, service))
     .WithDescription("Deletes a recruiter by its id")
     .WithOpenApi();
 
 
-IResult Create(Recruiter recruiter, IRecruiterService service)
+async Task<IResult> CreateAsync(Recruiter recruiter, IRecruiterService service)
 {
-    var result = service.Create(recruiter);
+    var result = await service.Create(recruiter);
     return Results.Ok(result);
 }
 
@@ -144,16 +151,16 @@ IResult List(IRecruiterService service)
     return Results.Ok(recruiter);
 }
 
-IResult Update(Recruiter recruiter, IRecruiterService service)
+async Task<IResult> UpdateAsync(Recruiter recruiter, IRecruiterService service)
 {
-    var updatedRecruiter = service.Update(recruiter);
+    var updatedRecruiter = await service.Update(recruiter);
     if (updatedRecruiter == null) return Results.NotFound("Recruiter not found.");
     return Results.Ok(updatedRecruiter);
 }
 
-IResult Delete(int id, IRecruiterService service)
+async Task<IResult> DeleteAsync(int id, IRecruiterService service)
 {
-    var result = service.Delete(id);
+    var result = await service.Delete(id);
     if (!result) return Results.BadRequest("Something went wrong.");
     return Results.Ok(result);
 }
